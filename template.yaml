@@ -12,7 +12,7 @@ Resources:
         SecretStringTemplate: '{"username": "admin"}'
         GenerateStringKey: "password"
         PasswordLength: 12
-        ExcludeCharacters: '"@/\'
+        ExcludeCharacters: '"@/\\'
 
   # 👥 EC2 Group
   EC2Group:
@@ -48,10 +48,11 @@ Resources:
   # 👤 EC2 User 1
   EC2User1:
     Type: AWS::IAM::User
+    DependsOn: UserTempPassword
     Properties:
       UserName: ec2-user1
       LoginProfile:
-        Password: !Sub "{{resolve:secretsmanager:${UserTempPassword}:SecretString:password}}"
+        Password: "{{resolve:secretsmanager:iam-user-temp-password:SecretString:password}}"
         PasswordResetRequired: true
       Groups:
         - !Ref EC2Group
@@ -59,10 +60,11 @@ Resources:
   # 👤 EC2 User 2
   EC2User2:
     Type: AWS::IAM::User
+    DependsOn: UserTempPassword
     Properties:
       UserName: ec2-user2
       LoginProfile:
-        Password: !Sub "{{resolve:secretsmanager:${UserTempPassword}:SecretString:password}}"
+        Password: "{{resolve:secretsmanager:iam-user-temp-password:SecretString:password}}"
         PasswordResetRequired: true
       Groups:
         - !Ref EC2Group
@@ -70,10 +72,11 @@ Resources:
   # 👤 S3 User
   S3User:
     Type: AWS::IAM::User
+    DependsOn: UserTempPassword
     Properties:
       UserName: s3-user
       LoginProfile:
-        Password: !Sub "{{resolve:secretsmanager:${UserTempPassword}:SecretString:password}}"
+        Password: "{{resolve:secretsmanager:iam-user-temp-password:SecretString:password}}"
         PasswordResetRequired: true
       Groups:
         - !Ref S3Group
