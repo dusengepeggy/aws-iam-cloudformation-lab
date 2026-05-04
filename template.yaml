@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: IAM Lab - Users, Groups, Permissions, and Secrets
+
+Resources:
+
+  # 🔐 Secret for temporary password
+  UserTempPassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: iam-user-temp-password
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "admin"}'
+        GenerateStringKey: "password"
+        PasswordLength: 12
+        ExcludeCharacters: '"@/\'
+
+  # 👥 EC2 Group
+  EC2Group:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: EC2Group
+      Policies:
+        - PolicyName: EC2Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:RunInstances
+                Resource: "*"
+
+  # 👥 S3 Group
+  S3Group:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: S3Group
+      Policies:
+        - PolicyName: S3Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListAllMyBuckets
+                Resource: "*"
+
+  # 👤 EC2 User 1
+  EC2User1:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: ec2-user1
+      LoginProfile:
+        Password: !Sub "{{resolve:secretsmanager:${UserTempPassword}:SecretString:password}}"
+        PasswordResetRequired: true
+      Groups:
+        - !Ref EC2Group
+
+  # 👤 EC2 User 2
+  EC2User2:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: ec2-user2
+      LoginProfile:
+        Password: !Sub "{{resolve:secretsmanager:${UserTempPassword}:SecretString:password}}"
+        PasswordResetRequired: true
+      Groups:
+        - !Ref EC2Group
+
+  # 👤 S3 User
+  S3User:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: s3-user
+      LoginProfile:
+        Password: !Sub "{{resolve:secretsmanager:${UserTempPassword}:SecretString:password}}"
+        PasswordResetRequired: true
+      Groups:
+        - !Ref S3Group
