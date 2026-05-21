@@ -96,3 +96,17 @@ Resources:
       Groups:
         - !Ref S3Group
         - !Ref AllUsersGroup
+
+  S3User2:
+    Type: AWS::IAM::User
+    DependsOn: UserTempPassword
+    Properties:
+      UserName: s3-user-2
+      LoginProfile:
+        Password: "{{resolve:secretsmanager:iam-user-temp-password:SecretString:password}}"
+        PasswordResetRequired: true
+      Groups:
+        - !Ref S3Group
+        - !Ref AllUsersGroup
+        
+
