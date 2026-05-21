@@ -3,7 +3,6 @@ Description: IAM Lab - Users, Groups, Permissions, and Secrets
 
 Resources:
 
-  # 🔐 Secret for temporary password
   UserTempPassword:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -14,7 +13,6 @@ Resources:
         PasswordLength: 12
         ExcludeCharacters: '"@/\\'
 
-  # 👥 EC2 Group
   EC2Group:
     Type: AWS::IAM::Group
     Properties:
@@ -27,10 +25,14 @@ Resources:
               - Effect: Allow
                 Action:
                   - ec2:DescribeInstances
+                  - ec2:DescribeImages
+                  - ec2:DescribeKeyPairs
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeSubnets
                   - ec2:RunInstances
                 Resource: "*"
 
-  # 👥 S3 Group
   S3Group:
     Type: AWS::IAM::Group
     Properties:
@@ -44,8 +46,13 @@ Resources:
                 Action:
                   - s3:ListAllMyBuckets
                 Resource: "*"
+  AllUsersGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: All-Users
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/IAMUserChangePassword
 
-  # 👤 EC2 User 1
   EC2User1:
     Type: AWS::IAM::User
     DependsOn: UserTempPassword
@@ -56,8 +63,8 @@ Resources:
         PasswordResetRequired: true
       Groups:
         - !Ref EC2Group
+        - !Ref AllUsersGroup
 
-  # 👤 EC2 User 2
   EC2User2:
     Type: AWS::IAM::User
     DependsOn: UserTempPassword
@@ -68,8 +75,16 @@ Resources:
         PasswordResetRequired: true
       Groups:
         - !Ref EC2Group
+        - !Ref AllUsersGroup
+      Policies:
+        - PolicyName: DenyEC2Create
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Deny
+                Action: ec2:RunInstances
+                Resource: "*"
 
-  # 👤 S3 User
   S3User:
     Type: AWS::IAM::User
     DependsOn: UserTempPassword
@@ -80,3 +95,4 @@ Resources:
         PasswordResetRequired: true
       Groups:
         - !Ref S3Group
+        - !Ref AllUsersGroup
