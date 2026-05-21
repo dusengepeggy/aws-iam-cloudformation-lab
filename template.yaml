@@ -13,10 +13,27 @@ Resources:
         PasswordLength: 12
         ExcludeCharacters: '"@/\\'
 
+  EC2ReadOnlyBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: EC2ReadOnlyBoundary
+      Description: Caps a user at read-only EC2 plus password change
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:Describe*
+              - iam:ChangePassword
+              - iam:GetUser
+            Resource: "*"
+
   EC2Group:
     Type: AWS::IAM::Group
     Properties:
       GroupName: EC2Group
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/IAMUserChangePassword
       Policies:
         - PolicyName: EC2Policy
           PolicyDocument:
@@ -37,6 +54,8 @@ Resources:
     Type: AWS::IAM::Group
     Properties:
       GroupName: S3Group
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/IAMUserChangePassword
       Policies:
         - PolicyName: S3Policy
           PolicyDocument:
@@ -46,12 +65,6 @@ Resources:
                 Action:
                   - s3:ListAllMyBuckets
                 Resource: "*"
-  AllUsersGroup:
-    Type: AWS::IAM::Group
-    Properties:
-      GroupName: All-Users
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/IAMUserChangePassword
 
   EC2User1:
     Type: AWS::IAM::User
@@ -63,27 +76,18 @@ Resources:
         PasswordResetRequired: true
       Groups:
         - !Ref EC2Group
-        - !Ref AllUsersGroup
 
   EC2User2:
     Type: AWS::IAM::User
     DependsOn: UserTempPassword
     Properties:
       UserName: ec2-user2
+      PermissionsBoundary: !Ref EC2ReadOnlyBoundary
       LoginProfile:
         Password: "{{resolve:secretsmanager:iam-user-temp-password:SecretString:password}}"
         PasswordResetRequired: true
       Groups:
         - !Ref EC2Group
-        - !Ref AllUsersGroup
-      Policies:
-        - PolicyName: DenyEC2Create
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Deny
-                Action: ec2:RunInstances
-                Resource: "*"
 
   S3User:
     Type: AWS::IAM::User
@@ -95,7 +99,6 @@ Resources:
         PasswordResetRequired: true
       Groups:
         - !Ref S3Group
-        - !Ref AllUsersGroup
 
   S3User2:
     Type: AWS::IAM::User
@@ -107,6 +110,3 @@ Resources:
         PasswordResetRequired: true
       Groups:
         - !Ref S3Group
-        - !Ref AllUsersGroup
-        
-
